@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SIM & CNIC (TM) Database - VIP Access</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Raleway:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    :root {
+      --background: hsl(0 0% 0%);
+      --foreground: hsl(40 20% 92%);
+      --card: hsl(220 15% 10%);
+      --primary: hsl(42 100% 50%);
+      --primary-foreground: hsl(220 20% 6%);
+      --muted: hsl(220 15% 18%);
+      --muted-foreground: hsl(40 10% 55%);
+      --border: hsl(42 30% 22%);
+      --destructive: hsl(0 70% 50%);
+    }
+    
+    body {
+      font-family: 'Raleway', sans-serif;
+      background: var(--background);
+      color: var(--foreground);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    
+    .font-display { font-family: 'Cinzel', serif; }
+    
+    /* Stars */
+    .star {
+      position: absolute;
+      border-radius: 50%;
+      background: hsl(42 100% 70%);
+    }
+    
+    .shooting-star {
+      position: absolute;
+      width: 80px;
+      height: 2px;
+      background: linear-gradient(90deg, hsl(42 100% 70%), transparent);
+      animation: shoot 4s ease-in-out infinite;
+      opacity: 0;
+    }
+    
+    .shooting-star::before {
+      content: '';
+      position: absolute;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: hsl(42 100% 80%);
+      box-shadow: 0 0 8px hsl(42 100% 60%);
+      left: 0;
+      top: -1.5px;
+    }
+    
+    .snowflake {
+      position: absolute;
+      top: -20px;
+      color: hsl(48 100% 65%);
+      text-shadow: 0 0 8px hsl(42 100% 50% / 0.8), 0 0 15px hsl(42 100% 60% / 0.5);
+      animation: snowfall linear infinite;
+      opacity: 0.9;
+      z-index: 100;
+    }
+    
+    /* Cards */
+    .premium-card {
+      position: relative;
+      border-radius: 1rem;
+      overflow: hidden;
+      background: linear-gradient(165deg, hsl(220 15% 13%) 0%, hsl(220 18% 9%) 50%, hsl(220 20% 7%) 100%);
+      border: 1px solid hsl(42 40% 25% / 0.4);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6), inset 0 1px 0 hsl(42 50% 50% / 0.08);
+    }
+    
+    .premium-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, hsl(42 100% 60% / 0.5), transparent);
+    }
+    
+    .header-card {
+      background: linear-gradient(180deg, hsl(220 15% 12%) 0%, hsl(220 18% 8%) 100%);
+      border: 1px solid hsl(42 40% 25% / 0.3);
+      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5), inset 0 1px 0 hsl(42 50% 60% / 0.1);
+      animation: float-card 6s ease-in-out infinite;
+    }
+    
+    .gold-text {
+      background: linear-gradient(135deg, hsl(48 100% 70%) 0%, hsl(42 100% 55%) 50%, hsl(36 100% 45%) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .gold-border { border: 1px solid hsl(42 50% 35% / 0.5); }
+    
+    .gold-glow { box-shadow: 0 0 25px hsl(42 100% 50% / 0.35), 0 0 50px hsl(42 100% 50% / 0.15); }
+    
+    /* Inputs & Buttons */
+    .vip-input {
+      width: 100%;
+      padding: 1rem 1.25rem;
+      border-radius: 0.75rem;
+      background: hsl(220 18% 10%);
+      border: 1px solid hsl(42 30% 25% / 0.4);
+      color: var(--foreground);
+      font-size: 1rem;
+      transition: all 0.3s;
+    }
+    
+    .vip-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 20px hsl(42 100% 50% / 0.2);
+    }
+    
+    .vip-input::placeholder { color: var(--muted-foreground); }
+    
+    .vip-button {
+      width: 100%;
+      padding: 1rem 2rem;
+      font-weight: 600;
+      border-radius: 0.75rem;
+      border: none;
+      cursor: pointer;
+      background: linear-gradient(135deg, hsl(48 100% 55%) 0%, hsl(42 100% 45%) 100%);
+      color: hsl(220 20% 8%);
+      box-shadow: 0 4px 15px hsl(42 100% 50% / 0.3);
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+    
+    .vip-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px hsl(42 100% 50% / 0.4);
+    }
+    
+    .vip-button:disabled { opacity: 0.5; transform: none; cursor: not-allowed; }
+    
+    .toggle-btn {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.875rem;
+      border-radius: 0.75rem;
+      font-weight: 500;
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    
+    .toggle-active {
+      background: linear-gradient(135deg, hsl(48 100% 55%) 0%, hsl(42 100% 45%) 100%);
+      color: hsl(220 20% 8%);
+      box-shadow: 0 4px 15px hsl(42 100% 50% / 0.3);
+    }
+    
+    .toggle-inactive {
+      background: hsl(220 15% 14%);
+      color: hsl(40 10% 60%);
+      border: 1px solid hsl(42 30% 25% / 0.3);
+    }
+    
+    .toggle-inactive:hover { background: hsl(220 15% 16%); color: hsl(40 20% 80%); }
+    
+    .result-item {
+      background: linear-gradient(145deg, hsl(220 15% 12%) 0%, hsl(220 18% 9%) 100%);
+      border: 1px solid hsl(42 40% 25% / 0.3);
+      border-radius: 1rem;
+      padding: 1rem;
+      transition: all 0.3s;
+    }
+    
+    .result-item:hover {
+      border-color: hsl(42 50% 40% / 0.5);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      transform: translateY(-2px);
+    }
+    
+    .copy-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+      padding: 0.375rem 0.75rem;
+      border-radius: 0.5rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      background: hsl(220 15% 15%);
+      border: 1px solid hsl(42 30% 30% / 0.4);
+      color: hsl(40 20% 70%);
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    
+    .copy-btn:hover {
+      background: var(--primary);
+      color: hsl(220 20% 8%);
+      box-shadow: 0 4px 12px hsl(42 100% 50% / 0.3);
+    }
+    
+    .feature-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      background: hsl(220 15% 14%);
+      border: 1px solid hsl(42 30% 25% / 0.3);
+      color: hsl(42 80% 60%);
+    }
+    
+    .history-card {
+      background: linear-gradient(165deg, hsl(220 15% 11%) 0%, hsl(220 18% 8%) 100%);
+      border: 1px solid hsl(42 40% 25% / 0.35);
+      box-shadow: 0 15px 35px -10px rgba(0, 0, 0, 0.5), inset 0 1px 0 hsl(42 50% 50% / 0.06);
+    }
+    
+    .history-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem;
+      border-radius: 0.75rem;
+      background: hsl(220 15% 10%);
+      border: 1px solid hsl(42 30% 20% / 0.3);
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    
+    .history-item:hover {
+      background: hsl(220 15% 13%);
+      border-color: hsl(42 50% 35% / 0.5);
+      transform: translateX(4px);
+    }
+    
+    /* No Data Found Popup */
+    .no-data-popup {
+      text-align: center;
+      padding: 3rem 1.5rem;
+      background: rgba(0, 0, 0, 0.5);
+      border-radius: 1rem;
+      border: 1px solid hsl(42 100% 50% / 0.2);
+      animation: scale-in 0.5s ease-out forwards;
+    }
+    
+    .no-data-icon {
+      width: 6rem;
+      height: 6rem;
+      margin: 0 auto 1.5rem;
+      border-radius: 50%;
+      background: hsl(42 100% 50% / 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid hsl(42 50% 35% / 0.5);
+      animation: pulse-glow 2s ease-in-out infinite;
+    }
+    
+    .no-data-icon svg {
+      width: 3rem;
+      height: 3rem;
+      color: hsl(42 100% 50% / 0.7);
+      animation: wiggle 1s ease-in-out infinite;
+    }
+    
+    .no-data-title {
+      font-size: 1.875rem;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+      animation: text-glow 2s ease-in-out infinite;
+    }
+    
+    /* Animations */
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.3; transform: scale(0.8); }
+      50% { opacity: 1; transform: scale(1.2); }
+    }
+    
+    @keyframes float-card {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
+    }
+    
+    @keyframes shoot {
+      0% { transform: translateX(0) translateY(0) rotate(-45deg); opacity: 0; }
+      5% { opacity: 1; }
+      15% { transform: translateX(250px) translateY(250px) rotate(-45deg); opacity: 0; }
+      100% { opacity: 0; }
+    }
+    
+    @keyframes snowfall {
+      0% { transform: translateY(0) translateX(0) rotate(0deg); opacity: 0; }
+      10% { opacity: 0.9; }
+      90% { opacity: 0.9; }
+      100% { transform: translateY(100vh) translateX(var(--sway, 0)) rotate(360deg); opacity: 0; }
+    }
+    
+    @keyframes fade-in {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @keyframes scale-in {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 0 20px hsl(42 100% 50% / 0.2); }
+      50% { box-shadow: 0 0 40px hsl(42 100% 50% / 0.4); }
+    }
+    
+    @keyframes bounce-in {
+      0% { transform: scale(0.3); opacity: 0; }
+      50% { transform: scale(1.05); }
+      70% { transform: scale(0.9); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    
+    @keyframes wiggle {
+      0%, 100% { transform: rotate(-3deg); }
+      50% { transform: rotate(3deg); }
+    }
+    
+    @keyframes text-glow {
+      0%, 100% { text-shadow: 0 0 10px hsl(42 100% 50% / 0.5); }
+      50% { text-shadow: 0 0 20px hsl(42 100% 50% / 0.8), 0 0 30px hsl(42 100% 50% / 0.4); }
+    }
+    
+    @keyframes spin { to { transform: rotate(360deg); } }
+    
+    @keyframes spin-slow { to { transform: rotate(360deg); } }
+    
+    @keyframes bounce-subtle {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-3px); }
+    }
+    
+    .animate-fade-in { animation: fade-in 0.6s ease-out forwards; }
+    .animate-scale-in { animation: scale-in 0.5s ease-out forwards; }
+    .animate-bounce-in { animation: bounce-in 0.6s ease-out forwards; }
+    .animate-pulse { animation: pulse-glow 2s ease-in-out infinite; }
+    .animate-wiggle { animation: wiggle 1s ease-in-out infinite; }
+    .animate-text-glow { animation: text-glow 2s ease-in-out infinite; }
+    .animate-spin { animation: spin 1s linear infinite; }
+    .animate-spin-slow { animation: spin-slow 3s linear infinite; }
+    
+    .hidden { display: none !important; }
+    
+    /* SVG Icons */
+    .icon { width: 1.25rem; height: 1.25rem; }
+    .icon-sm { width: 0.875rem; height: 0.875rem; }
+    .icon-lg { width: 2rem; height: 2rem; }
+    .icon-xl { width: 3rem; height: 3rem; }
+  </style>
+</head>
+<body>
+  <!-- Background -->
+  <div id="starry-bg" style="position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: 0;"></div>
+  <div id="snowflakes" style="position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: 100;"></div>
+  
+  <!-- Main Content -->
+  <div style="position: relative; z-index: 10; padding: 1.5rem 1rem; min-height: 100vh;">
+    <div style="max-width: 32rem; margin: 0 auto;">
+      
+      <!-- Header Card -->
+      <div class="header-card premium-card" style="border-radius: 1rem; padding: 1.5rem 2rem; margin-bottom: 1.5rem; text-align: center;">
+        <div style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.375rem 1rem; border-radius: 9999px; background: hsl(42 100% 50% / 0.1); border: 1px solid hsl(42 50% 35% / 0.5); margin-bottom: 1rem;" class="animate-pulse">
+          <svg class="icon-sm animate-wiggle" fill="currentColor" viewBox="0 0 24 24" style="color: var(--primary);"><path d="M3 16l-3-7h19l-3 7H3zm0 0l3 7h12l3-7H3zm0 0L6 2h12l3 14H3z"/></svg>
+          <span style="font-size: 0.75rem; color: var(--primary); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;">VIP (TM) Database Access</span>
+          <svg class="icon-sm animate-spin-slow" fill="currentColor" viewBox="0 0 24 24" style="color: var(--primary);"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>
+        </div>
+        
+        <h1 class="font-display" style="font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem;">
+          <span class="gold-text animate-text-glow">SIM & CNIC</span>
+        </h1>
+        <h2 class="font-display" style="font-size: 1.25rem; color: var(--foreground); opacity: 0.9; margin-bottom: 1rem;">Information Lookup By (TM ASAD 1K)</h2>
+        
+        <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; margin-bottom: 1rem;">
+          <div class="feature-badge"><svg class="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24"><polygon points="13,2 3,14 12,14 11,22 21,10 12,10"/></svg> Fast</div>
+          <div class="feature-badge"><svg class="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Secure</div>
+          <div class="feature-badge"><svg class="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg> PREMIUM (TM) DATABASE</div>
+        </div>
+        
+        <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; color: var(--muted-foreground); font-size: 0.875rem;">
+          <svg class="icon-sm animate-spin-slow" style="color: hsl(42 100% 50% / 0.7);" fill="currentColor" viewBox="0 0 24 24"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg>
+          <span>Powered by <span style="color: var(--primary); font-weight: 600;">TM ASAD 1K</span></span>
+          <svg class="icon-sm animate-spin-slow" style="color: hsl(42 100% 50% / 0.7);" fill="currentColor" viewBox="0 0 24 24"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg>
+        </div>
+      </div>
+      
+      <!-- Search Card -->
+      <div class="premium-card animate-fade-in" style="padding: 1.25rem 1.5rem; margin-bottom: 1.5rem;">
+        <div style="display: flex; gap: 0.75rem; margin-bottom: 1.25rem;">
+          <button id="simBtn" class="toggle-btn toggle-active" onclick="setSearchType('sim')">
+            <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><path d="M12 18h.01"/></svg>
+            SIM
+          </button>
+          <button id="cnicBtn" class="toggle-btn toggle-inactive" onclick="setSearchType('cnic')">
+            <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+            CNIC
+          </button>
+        </div>
+        
+        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+          <input type="text" id="searchInput" class="vip-input" placeholder="Enter SIM number..." maxlength="15">
+          <button id="searchBtn" class="vip-button" onclick="handleSearch()">
+            <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            Search TM Database
+          </button>
+        </div>
+      </div>
+      
+      <!-- Default Card (Ready to Search) -->
+      <div id="defaultCard" class="premium-card animate-fade-in" style="padding: 1.5rem;">
+        <div style="text-align: center; margin-bottom: 1.25rem;">
+          <div style="width: 4rem; height: 4rem; margin: 0 auto 1rem; border-radius: 50%; background: hsl(42 100% 50% / 0.1); border: 1px solid hsl(42 50% 35% / 0.5); display: flex; align-items: center; justify-content: center;" class="animate-pulse">
+            <svg class="icon-lg" style="color: var(--primary);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          </div>
+          <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 0.25rem;">Ready to Search</h3>
+          <p style="color: var(--muted-foreground); font-size: 0.875rem;">Enter a SIM or CNIC number above to get started</p>
+        </div>
+        
+        <div style="border: 1px solid hsl(42 30% 22% / 0.5); border-radius: 0.75rem; padding: 1rem; background: hsl(220 15% 18% / 0.1);">
+          <div style="font-size: 0.75rem; color: var(--muted-foreground); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+            <svg class="icon-sm" fill="currentColor" viewBox="0 0 24 24"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg>
+            Sample Result Preview
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+            <div><div style="height: 0.75rem; width: 4rem; background: hsl(220 15% 18%); border-radius: 0.25rem; margin-bottom: 0.5rem;"></div><div style="height: 1.25rem; width: 6rem; background: hsl(220 15% 18%); border-radius: 0.25rem;"></div></div>
+            <div><div style="height: 0.75rem; width: 3rem; background: hsl(220 15% 18%); border-radius: 0.25rem; margin-bottom: 0.5rem;"></div><div style="height: 1.25rem; width: 5rem; background: hsl(220 15% 18%); border-radius: 0.25rem;"></div></div>
+            <div><div style="height: 0.75rem; width: 3.5rem; background: hsl(220 15% 18%); border-radius: 0.25rem; margin-bottom: 0.5rem;"></div><div style="height: 1.25rem; width: 7rem; background: hsl(220 15% 18%); border-radius: 0.25rem;"></div></div>
+            <div><div style="height: 0.75rem; width: 4rem; background: hsl(220 15% 18%); border-radius: 0.25rem; margin-bottom: 0.5rem;"></div><div style="height: 1.25rem; width: 100%; background: hsl(220 15% 18%); border-radius: 0.25rem;"></div></div>
+          </div>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-top: 1.25rem;">
+          <div style="text-align: center; padding: 0.75rem; border-radius: 0.5rem; background: hsl(220 15% 18% / 0.2); border: 1px solid hsl(42 50% 35% / 0.5);">
+            <div style="font-size: 1.25rem; font-weight: 700; color: var(--primary);">10M+</div>
+            <div style="font-size: 0.75rem; color: var(--muted-foreground);">Records</div>
+          </div>
+          <div style="text-align: center; padding: 0.75rem; border-radius: 0.5rem; background: hsl(220 15% 18% / 0.2); border: 1px solid hsl(42 50% 35% / 0.5);">
+            <div style="font-size: 1.25rem; font-weight: 700; color: var(--primary);">99%</div>
+            <div style="font-size: 0.75rem; color: var(--muted-foreground);">Accuracy</div>
+          </div>
+          <div style="text-align: center; padding: 0.75rem; border-radius: 0.5rem; background: hsl(220 15% 18% / 0.2); border: 1px solid hsl(42 50% 35% / 0.5);">
+            <div style="font-size: 1.25rem; font-weight: 700; color: var(--primary);">&lt;1s</div>
+            <div style="font-size: 0.75rem; color: var(--muted-foreground);">Response</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Loading Card -->
+      <div id="loadingCard" class="premium-card hidden animate-scale-in" style="padding: 2rem; text-align: center;">
+        <div style="position: relative; width: 5rem; height: 5rem; margin: 0 auto 1rem;">
+          <div style="position: absolute; inset: 0; border-radius: 50%; border: 2px solid hsl(42 100% 50% / 0.2); border-top-color: var(--primary); animation: spin 1s linear infinite;"></div>
+          <div style="position: absolute; inset: 0.5rem; border-radius: 50%; border: 2px solid transparent; border-top-color: hsl(42 80% 45%); animation: spin 0.8s linear infinite reverse;"></div>
+          <div style="position: absolute; inset: 1rem; border-radius: 50%; border: 2px solid transparent; border-top-color: hsl(42 60% 40%); animation: spin 0.6s linear infinite;"></div>
+          <div style="position: absolute; inset: 1.5rem; border-radius: 50%; background: hsl(42 100% 50% / 0.3);" class="animate-pulse"></div>
+        </div>
+        <p style="font-weight: 600; margin-bottom: 0.25rem;">Searching TM Database...</p>
+        <p style="color: var(--muted-foreground); font-size: 0.875rem;">Please wait</p>
+      </div>
+      
+      <!-- Results Card -->
+      <div id="resultsCard" class="premium-card hidden animate-bounce-in" style="overflow: hidden;">
+        <div id="resultsHeader" style="padding: 1rem; border-bottom: 1px solid hsl(42 30% 22% / 0.5); display: flex; align-items: center; justify-content: space-between; background: hsl(220 15% 18% / 0.2);"></div>
+        <div id="resultsContent" style="padding: 1rem 1.25rem;"></div>
+        <div style="padding: 0.75rem 1rem; background: hsl(220 15% 18% / 0.1); text-align: center; font-size: 0.75rem; color: var(--muted-foreground); border-top: 1px solid hsl(42 30% 22% / 0.3);">
+          Powered by <span style="color: var(--primary); font-weight: 600;">TM ASAD 1K</span>
+        </div>
+      </div>
+      
+      <!-- History Card -->
+      <div id="historyCard" class="history-card hidden" style="border-radius: 1rem; padding: 1.25rem; margin-top: 1.5rem;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <div style="width: 2rem; height: 2rem; border-radius: 0.5rem; background: hsl(42 100% 50% / 0.1); border: 1px solid hsl(42 50% 35% / 0.5); display: flex; align-items: center; justify-content: center;">
+              <svg class="icon-sm" style="color: var(--primary);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
+            </div>
+            <h3 style="font-weight: 600;">Recent Searches</h3>
+          </div>
+          <button onclick="clearHistory()" style="display: flex; align-items: center; gap: 0.25rem; padding: 0.25rem 0.5rem; border-radius: 0.5rem; font-size: 0.75rem; color: var(--muted-foreground); background: transparent; border: none; cursor: pointer;" onmouseover="this.style.color='var(--destructive)'" onmouseout="this.style.color='var(--muted-foreground)'">
+            <svg class="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+            Clear
+          </button>
+        </div>
+        <div id="historyList" style="display: flex; flex-direction: column; gap: 0.5rem;"></div>
+      </div>
+      
+      <!-- Footer -->
+      <footer style="margin-top: 2rem; text-align: center;" class="animate-fade-in">
+        <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+          <svg class="icon-sm animate-wiggle" style="color: var(--primary);" fill="currentColor" viewBox="0 0 24 24"><path d="M3 16l-3-7h19l-3 7H3zm0 0l3 7h12l3-7H3zm0 0L6 2h12l3 14H3z"/></svg>
+          <span class="font-display gold-text" style="font-weight: 600;">DEVELOPED BY : TM ASAD 1K</span>
+          <svg class="icon-sm animate-wiggle" style="color: var(--primary);" fill="currentColor" viewBox="0 0 24 24"><path d="M3 16l-3-7h19l-3 7H3zm0 0l3 7h12l3-7H3zm0 0L6 2h12l3 14H3z"/></svg>
+        </div>
+        <p style="color: hsl(40 10% 55% / 0.5); font-size: 0.75rem;">© 2026 VIP TM Database • Premium Access</p>
+      </footer>
+    </div>
+  </div>
+
+  <script>
+    // State
+    let searchType = 'sim';
+    let lastSearchType = 'sim';
+    let lastSearchValue = '';
+    let searchHistory = JSON.parse(localStorage.getItem('search_history') || '[]');
+
+    // Sanitize address - remove promotional content
+    function sanitizeAddress(address) {
+      if (!address) return 'Data Not Found';
+      const cleaned = address.trim();
+      if (
+        cleaned.includes('whatsapp.com') ||
+        cleaned.includes('t.me') ||
+        cleaned.includes('Join my channel') ||
+        cleaned.includes('join my channel') ||
+        cleaned.toLowerCase().includes('telegram') ||
+        cleaned.includes('🎉') ||
+        cleaned.length < 3
+      ) {
+        return 'Data Not Found';
+      }
+      return cleaned;
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      createStars();
+      createSnowflakes();
+      renderHistory();
+      
+      document.getElementById('searchInput').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') handleSearch();
+      });
+    });
+
+    function createStars() {
+      const bg = document.getElementById('starry-bg');
+      bg.innerHTML = '<div style="position: absolute; inset: 0; background: var(--background);"></div>';
+      
+      for (let i = 0; i < 80; i++) {
+        const star = document.createElement('div');
+        star.className = 'star';
+        const size = Math.random() * 2.2 + 0.6;
+        const isBright = Math.random() > 0.85;
+        star.style.cssText = `
+          left: ${Math.random() * 100}%;
+          top: ${Math.random() * 100}%;
+          width: ${size}px;
+          height: ${size}px;
+          opacity: ${isBright ? 0.9 : 0.45};
+          animation: twinkle ${Math.random() * 3 + 3}s ease-in-out infinite;
+          animation-delay: ${Math.random() * 5}s;
+          box-shadow: ${isBright ? '0 0 8px hsl(42 100% 70%), 0 0 14px hsl(42 100% 50% / 0.35)' : size > 1.6 ? '0 0 6px hsl(42 100% 60% / 0.6)' : 'none'};
+        `;
+        bg.appendChild(star);
+      }
+      
+      // Shooting stars
+      for (let i = 0; i < 3; i++) {
+        const shoot = document.createElement('div');
+        shoot.className = 'shooting-star';
+        shoot.style.cssText = `
+          top: ${5 + Math.random() * 40}%;
+          left: ${10 + Math.random() * 60}%;
+          animation-delay: ${i * 8 + Math.random() * 2}s;
+        `;
+        bg.appendChild(shoot);
+      }
+    }
+
+    function createSnowflakes() {
+      const container = document.getElementById('snowflakes');
+      for (let i = 0; i < 8; i++) {
+        const flake = document.createElement('div');
+        flake.className = 'snowflake';
+        const sway = Math.random() * 30 - 15;
+        flake.style.cssText = `
+          left: ${Math.random() * 100}%;
+          font-size: ${Math.random() * 7 + 5}px;
+          animation-duration: ${12 + Math.random() * 10}s;
+          animation-delay: ${Math.random() * 15}s;
+          --sway: ${sway}px;
+        `;
+        flake.textContent = '❄';
+        container.appendChild(flake);
+      }
+    }
+
+    function setSearchType(type) {
+      searchType = type;
+      const simBtn = document.getElementById('simBtn');
+      const cnicBtn = document.getElementById('cnicBtn');
+      const input = document.getElementById('searchInput');
+      
+      if (type === 'sim') {
+        simBtn.className = 'toggle-btn toggle-active';
+        cnicBtn.className = 'toggle-btn toggle-inactive';
+        input.placeholder = 'Enter SIM number...';
+      } else {
+        simBtn.className = 'toggle-btn toggle-inactive';
+        cnicBtn.className = 'toggle-btn toggle-active';
+        input.placeholder = 'Enter CNIC number...';
+      }
+    }
+
+    async function handleSearch() {
+      const input = document.getElementById('searchInput');
+      const value = input.value.trim();
+      
+      if (!value) {
+        showToast('Please enter a search value', 'error');
+        return;
+      }
+      
+      if (searchType === 'sim' && !/^\d{10,12}$/.test(value)) {
+        showToast('Please enter a valid 10-12 digit SIM number', 'error');
+        return;
+      }
+      
+      if (searchType === 'cnic' && !/^\d{13}$/.test(value)) {
+        showToast('Please enter a valid 13-digit CNIC number', 'error');
+        return;
+      }
+      
+      lastSearchType = searchType;
+      lastSearchValue = value;
+      
+      showCard('loadingCard');
+      
+      try {
+        const response = await fetch(`https://fam-official.serv00.net/api/famofc_simdatabase.php?number=${encodeURIComponent(value)}`);
+        if (!response.ok) throw new Error('Network error');
+        
+        const data = await response.json();
+        const success = data.success === true || data.success === 'true' || data.success === 1 || data.success === '1';
+        
+        addToHistory(searchType, value, success);
+        renderResults({ ...data, success });
+        
+        if (success && data.data && data.data.length > 0) {
+          showToast('Information retrieved successfully!', 'success');
+        }
+      } catch (error) {
+        renderResults({ success: false, error: 'Connection failed. Please try again.' });
+        showToast('Connection error', 'error');
+      }
+    }
+
+    function renderResults(result) {
+      showCard('resultsCard');
+      
+      const header = document.getElementById('resultsHeader');
+      const content = document.getElementById('resultsContent');
+      
+      const hasResults = result.success && result.data && result.data.length > 0;
+      const isNoData = !hasResults && (result.success || (result.error && /no.*data|not.*found/i.test(result.error)));
+      
+      // Header
+      header.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 0.5rem; min-width: 0;">
+          <svg class="icon-sm" style="color: var(--primary); flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            ${lastSearchType === 'sim' ? '<rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><path d="M12 18h.01"/>' : '<rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/>'}
+          </svg>
+          <span style="font-family: monospace; color: var(--primary); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${lastSearchValue}</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0;">
+          <div style="display: flex; align-items: center; gap: 0.375rem; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; ${hasResults ? 'background: hsl(42 100% 50% / 0.2); color: var(--primary);' : isNoData ? 'background: hsl(42 100% 50% / 0.15); color: var(--primary);' : 'background: hsl(0 70% 50% / 0.2); color: var(--destructive);'}">
+            <svg class="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              ${hasResults ? '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>' : isNoData ? '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>' : '<circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>'}
+            </svg>
+            ${hasResults ? 'Found' : isNoData ? 'Data Not Found' : 'Error'}
+          </div>
+          ${hasResults ? `<button class="copy-btn" onclick="downloadAllPdf()"><svg class="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> PDF</button>` : ''}
+        </div>
+      `;
+      
+      // Content
+      if (hasResults) {
+        content.innerHTML = result.data.map((sim, i) => {
+          const number = sim.number || 'Data Not Found';
+          const name = sim.name || 'Data Not Found';
+          const cnic = sim.cnic || 'Data Not Found';
+          const address = sanitizeAddress(sim.address);
+          
+          return `
+            <div class="result-item" style="margin-bottom: ${i < result.data.length - 1 ? '1rem' : '0'};">
+              <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-bottom: 0.75rem;">
+                <button class="copy-btn" onclick="copyAll(${i})">
+                  <svg class="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                  Copy All
+                </button>
+                <button class="copy-btn" style="background: hsl(42 100% 50% / 0.2); color: var(--primary);" onclick="downloadSinglePdf(${i})">
+                  <svg class="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  Download PDF
+                </button>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div>
+                  <div style="display: flex; align-items: center; gap: 0.375rem; color: var(--muted-foreground); font-size: 0.75rem; margin-bottom: 0.25rem;">
+                    <svg class="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><path d="M12 18h.01"/></svg>
+                    Number
+                  </div>
+                  <div style="color: var(--primary); font-weight: 700;">${number}</div>
+                </div>
+                <div>
+                  <div style="display: flex; align-items: center; gap: 0.375rem; color: var(--muted-foreground); font-size: 0.75rem; margin-bottom: 0.25rem;">
+                    <svg class="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    Name
+                  </div>
+                  <div style="font-weight: 600;">${name}</div>
+                </div>
+                <div>
+                  <div style="display: flex; align-items: center; gap: 0.375rem; color: var(--muted-foreground); font-size: 0.75rem; margin-bottom: 0.25rem;">
+                    <svg class="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                    CNIC
+                  </div>
+                  <div style="font-family: monospace; font-size: 0.875rem; opacity: 0.9;">${cnic}</div>
+                </div>
+                <div>
+                  <div style="display: flex; align-items: center; gap: 0.375rem; color: var(--muted-foreground); font-size: 0.75rem; margin-bottom: 0.25rem;">
+                    <svg class="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    Address
+                  </div>
+                  <div style="font-size: 0.875rem; opacity: 0.8; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${address}</div>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+        
+        // Store for PDF/copy
+        window.currentResults = result.data.map(sim => ({
+          number: sim.number || 'Data Not Found',
+          name: sim.name || 'Data Not Found',
+          cnic: sim.cnic || 'Data Not Found',
+          address: sanitizeAddress(sim.address)
+        }));
+      } else if (isNoData) {
+        content.innerHTML = `
+          <div class="no-data-popup">
+            <div class="no-data-icon">
+              <svg class="icon-xl" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: hsl(42 100% 50% / 0.7);">
+                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+            </div>
+            <h3 class="font-display gold-text no-data-title">Data Not Found</h3>
+            <p style="color: var(--muted-foreground); font-size: 1.125rem;">No records match your search</p>
+            <div style="margin-top: 1.5rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem; color: hsl(42 100% 50% / 0.5);">
+              <svg class="icon-sm animate-spin-slow" fill="currentColor" viewBox="0 0 24 24"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg>
+              <span style="font-size: 0.875rem;">Try a different number</span>
+              <svg class="icon-sm animate-spin-slow" fill="currentColor" viewBox="0 0 24 24"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg>
+            </div>
+          </div>
+        `;
+      } else {
+        content.innerHTML = `
+          <div style="text-align: center; padding: 3rem 1.5rem; background: rgba(0,0,0,0.5); border-radius: 1rem; border: 1px solid hsl(0 70% 50% / 0.3);">
+            <div style="width: 6rem; height: 6rem; margin: 0 auto 1.5rem; border-radius: 50%; background: hsl(0 70% 50% / 0.1); display: flex; align-items: center; justify-content: center; border: 2px solid hsl(0 70% 50% / 0.3);">
+              <svg class="icon-xl animate-wiggle" style="color: var(--destructive);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+            </div>
+            <h3 class="font-display" style="font-size: 1.875rem; font-weight: 700; color: var(--destructive); margin-bottom: 0.75rem;">Error</h3>
+            <p style="color: var(--muted-foreground); font-size: 1.125rem;">${result.error || 'Something went wrong'}</p>
+          </div>
+        `;
+      }
+    }
+
+    function showCard(cardId) {
+      ['defaultCard', 'loadingCard', 'resultsCard'].forEach(id => {
+        document.getElementById(id).classList.toggle('hidden', id !== cardId);
+      });
+    }
+
+    function copyAll(index) {
+      const sim = window.currentResults[index];
+      const text = `📱 Number: ${sim.number}\n👤 Name: ${sim.name}\n🆔 CNIC: ${sim.cnic}\n📍 Address: ${sim.address}`;
+      navigator.clipboard.writeText(text).then(() => showToast('All Details copied!', 'success'));
+    }
+
+    async function downloadSinglePdf(index) {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+      const sim = window.currentResults[index];
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const centerX = pageWidth / 2;
+      
+      doc.setFillColor(20, 20, 20);
+      doc.rect(0, 0, pageWidth, 120, 'F');
+      
+      doc.setFontSize(28);
+      doc.setTextColor(218, 165, 32);
+      doc.text('SIM & CNIC Information By (TM ASAD 1K)', centerX, 50, { align: 'center' });
+      
+      doc.setFontSize(12);
+      doc.setTextColor(150, 150, 150);
+      doc.text('VIP TM Database • Premium Access', centerX, 75, { align: 'center' });
+      
+      doc.setFontSize(10);
+      doc.text(`Search: ${lastSearchType.toUpperCase()} - ${lastSearchValue}`, centerX, 100, { align: 'center' });
+      
+      let y = 160;
+      doc.setDrawColor(218, 165, 32);
+      doc.setLineWidth(2);
+      doc.roundedRect(40, y - 20, pageWidth - 80, 220, 10, 10, 'S');
+      
+      doc.setFontSize(14);
+      doc.setTextColor(218, 165, 32);
+      doc.text(`Record ${index + 1}`, 60, y);
+      y += 35;
+      
+      const fields = [
+        { label: 'Phone Number', value: sim.number },
+        { label: 'Full Name', value: sim.name },
+        { label: 'CNIC Number', value: sim.cnic },
+        { label: 'Address', value: sim.address },
+      ];
+      
+      fields.forEach(field => {
+        doc.setFontSize(10);
+        doc.setTextColor(150, 150, 150);
+        doc.text(field.label, 60, y);
+        y += 18;
+        
+        doc.setFontSize(14);
+        doc.setTextColor(255, 255, 255);
+        const lines = doc.splitTextToSize(field.value, pageWidth - 140);
+        doc.text(lines, 60, y);
+        y += lines.length * 18 + 15;
+      });
+      
+      doc.setFontSize(10);
+      doc.setTextColor(100, 100, 100);
+      doc.text(`Generated: ${new Date().toLocaleString()}`, centerX, 750, { align: 'center' });
+      doc.setTextColor(218, 165, 32);
+      doc.text('Powered by TM ASAD 1K • VIP Premium TM Database', centerX, 770, { align: 'center' });
+      
+      doc.save(`${sim.number || sim.cnic || 'record'}_${index + 1}.pdf`);
+      showToast('PDF downloaded!', 'success');
+    }
+
+    async function downloadAllPdf() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+      
+      doc.setFontSize(16);
+      doc.text('SIM & CNIC Lookup Result By (TM ASAD 1K)', 40, 52);
+      doc.setFontSize(11);
+      doc.text(`Search: ${lastSearchType.toUpperCase()} ${lastSearchValue}`, 40, 74);
+      doc.text(`Generated: ${new Date().toLocaleString()}`, 40, 90);
+      
+      let y = 120;
+      window.currentResults.forEach((sim, idx) => {
+        if (y > 760) { doc.addPage(); y = 60; }
+        doc.setFontSize(13);
+        doc.text(`Record ${idx + 1}`, 40, y);
+        y += 18;
+        doc.setFontSize(11);
+        [`Number: ${sim.number}`, `Name: ${sim.name}`, `CNIC: ${sim.cnic}`, `Address: ${sim.address}`].forEach(line => {
+          if (y > 790) { doc.addPage(); y = 60; }
+          doc.text(line, 60, y);
+          y += 14;
+        });
+        y += 10;
+      });
+      
+      doc.save(`${lastSearchValue || 'result'}.pdf`);
+      showToast('PDF downloaded!', 'success');
+    }
+
+    function addToHistory(type, value, success) {
+      const item = { id: Date.now().toString(), type, value, timestamp: Date.now(), success };
+      searchHistory = [item, ...searchHistory.filter(h => h.value !== value)].slice(0, 10);
+      localStorage.setItem('search_history', JSON.stringify(searchHistory));
+      renderHistory();
+    }
+
+    function clearHistory() {
+      searchHistory = [];
+      localStorage.removeItem('search_history');
+      renderHistory();
+      showToast('History cleared', 'success');
+    }
+
+    function renderHistory() {
+      const card = document.getElementById('historyCard');
+      const list = document.getElementById('historyList');
+      
+      if (searchHistory.length === 0) {
+        card.classList.add('hidden');
+        return;
+      }
+      
+      card.classList.remove('hidden');
+      list.innerHTML = searchHistory.map(item => `
+        <div class="history-item" onclick="loadFromHistory('${item.type}', '${item.value}')">
+          <div style="width: 2rem; height: 2rem; border-radius: 0.5rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; ${item.type === 'sim' ? 'background: hsl(42 100% 50% / 0.1); color: var(--primary);' : 'background: hsl(35 100% 45% / 0.1); color: hsl(35 100% 45%);'}">
+            <svg class="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              ${item.type === 'sim' ? '<rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><path d="M12 18h.01"/>' : '<rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/>'}
+            </svg>
+          </div>
+          <div style="flex: 1; min-width: 0;">
+            <div style="font-family: monospace; font-size: 0.875rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${item.value}</div>
+            <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; color: var(--muted-foreground);">
+              <svg class="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              ${new Date(item.timestamp).toLocaleTimeString()}
+            </div>
+          </div>
+          <div style="width: 0.5rem; height: 0.5rem; border-radius: 50%; flex-shrink: 0; ${item.success ? 'background: var(--primary);' : 'background: var(--destructive);'}" class="animate-pulse"></div>
+        </div>
+      `).join('');
+    }
+
+    function loadFromHistory(type, value) {
+      setSearchType(type);
+      document.getElementById('searchInput').value = value;
+    }
+
+    function showToast(message, type) {
+      const toast = document.createElement('div');
+      toast.style.cssText = `
+        position: fixed;
+        bottom: 1.5rem;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        z-index: 1000;
+        animation: fade-in 0.3s ease-out;
+        ${type === 'success' ? 'background: hsl(42 100% 50%); color: hsl(220 20% 8%);' : 'background: hsl(0 70% 50%); color: white;'}
+      `;
+      toast.textContent = message;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+  </script>
+</body>
+</html>
